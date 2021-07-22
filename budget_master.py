@@ -1,33 +1,76 @@
-prompt = "What would you like to do?\n1 - add expense\n2 - remove expense\n3 - list expenses\n"
+import sqlite3
+from os.path import exists as file_exists
+
+conn = sqlite3.connect('expenses.db')
+
+c = conn.cursor()
+
+c.execute("""CREATE TABLE expenses (
+		seller text,
+		type text,
+		price integer,
+		transaction_date text
+		)""")
+
+prompt = ("What would you like to do?\n1 - add expense\n"
+		"2 - remove expense\n3 - search for expense\n"
+		"4 - list expenses\n"
+)
 message = ""
 
 expenses = []
 
-def add_expense(seller, price):
+
+def create_database():
+	c.execute("""SELECT tableName FROM sqlite_master WHERE type='table'
+			AND tableName='expenses';""").fetchall()
+
+
+def add_expense(seller, expense_type, price, transaction_date):
 	new_id = len(expenses) + 1
+	with conn:
+		c.execute("""INSERT INTO expenses VALUES
+			(:seller, :expense_type, :price, :transaction_date)""", 
+			{'seller': seller, 'expense_type': expense_type, 'price': price, 'transaction_date': transaction_date})
 	new_expense = {'id': new_id, seller: price}
 	expenses.append(new_expense)
 
 
-def remove_expense():
-	expense_id = input('Enter id of the expense to delete: ')
-	del expenses[int(expense_id) - 1]
+def remove_expense(rowid):
+	with conn:
+		c.execute("DELETE from expenses WHERE rowid=:rowid", {'rowid': rowid})
 
+
+def search_expenses(seller):
+	c.execute("SELECT rowid, * FROM expenses WHERE seller=:seller", {'seller': seller})
+	print(c.fetchall())
 
 def list_expenses(expenses):
 	for expense in expenses:
 		for key, value in expense.items():
 			print(f'{key}: {value}')
 
+active = True
 
-while message != 'quit':
+while active:
+	if not file_exists('expenses.db'):
+		create_database()
 	message = input(prompt)
 
-	if str(message) == '1':
+	if message == "quit":
+		active = False
+		conn.close()
+	elif str(message) == '1':
 		seller = input('Name the seller: ')
+		expense_type = input('Name the type of expense: ')
 		price = input('Name the price: ')
-		add_expense(seller, price)
+		transaction_date = input('Enter the date of trasaction: ')
+		add_expense(seller, expense_type, price, transaction_date)
 	elif str(message) == '2':
-		remove_expense()
+		expense_id = input("Which item would you like to delete? ")
+		remove_expense(expense_id)
 	elif str(message) == '3':
+		seller = input("Enter seller name: ")
+		search_expenses(seller)
+	elif str(message) == '4':
 		list_expenses(expenses)
