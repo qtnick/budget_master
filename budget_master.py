@@ -8,8 +8,8 @@ conn = sqlite3.connect('expenses.db')
 c = conn.cursor()
 
 prompt = ("What would you like to do?\n1 - add expense\n"
-		"2 - remove expense\n3 - search for expense\n"
-		"4 - list expenses\n"
+		"2 - remove expense\n3 - edit expense\n"
+		"4 - search for expense\n5 - list expenses\n"
 )
 message = ""
 
@@ -23,8 +23,6 @@ def create_database():
 		price integer,
 		transaction_date text
 		)""")
-	# c.execute("""SELECT tableName FROM sqlite_master WHERE type='table'
-	# 		AND tableName='expenses';""").fetchall()
 
 
 def add_expense(seller, expense_type, price, transaction_date):
@@ -42,32 +40,59 @@ def remove_expense(rowid):
 		c.execute("DELETE from expenses WHERE rowid=:rowid", {'rowid': rowid})
 
 
+def edit_expense(rowid):
+	answer = input("Which column would you like to edit? ")
+	
+	if answer == "seller":
+		new_seller = input("Enter new seller: ")
+		with conn:
+			c.execute("UPDATE expenses SET seller=:seller WHERE rowid=:rowid", {'seller': new_seller, 'rowid': rowid})
+	elif answer == "expense_type":
+		new_type == input("Enter new expense type: ")
+		with conn:
+			c.execute("UPDATE expenses SET expense_type=:expense_type WHERE rowid=:rowid", {'expense_type': new_type, 'rowid': rowid})
+	elif answer == "price":
+		new_price = input("Enter new price: ")
+		with conn:
+			c.execute("UPDATE expenses SET price=:price WHERE rowid=:rowid", {'price': new_price, 'rowid': rowid})
+	elif answer == "transaction_date":
+		new_date = input("Enter new date: ")
+		with conn:
+			c.execute("UPDATE expenses SET transaction_date=:transaction_date WHERE rowid=:rowid", {'transaction_date': new_date, 'rowid': rowid})
+	else:
+		print("\nWrong column name.\n")
+
+
 def search_expenses(seller):
 	c.execute("SELECT rowid, * FROM expenses WHERE seller=:seller", {'seller': seller})
-	print(c.fetchall())
+	mytable = from_db_cursor(c)
+	result = c.fetchall()
+	print(mytable)
+
 
 def list_expenses():
-	c.execute("SELECT * FROM expenses")
+	c.execute("SELECT rowid, * FROM expenses ORDER BY transaction_date DESC")
 	mytable = from_db_cursor(c)
 	result = c.fetchall()
 	print(mytable)
 	for row in result:
 		print(row, '\n')
 
-	# for expense in expenses:
-	# 	for key, value in expense.items():
-	# 		print(f'{key}: {value}')
 
 def is_valid_date(input_date):
-	# day, month, year = input_date.split('-')
+	datetime.datetime.strptime(input_date, '%Y-%m-%d')
 
-	# isValidDate = True
-	# try:
-		datetime.datetime.strptime(input_date, '%d-%m-%Y')
-	# except ValueError:
-	# 	isValidDate = False
 
-	# return isValidDate
+def is_valid_id(rowid):
+	with conn:
+		c.execute("SELECT rowid FROM expenses")
+	rowids = c.fetchall()
+	result = [row[0] for row in rowids]
+	
+	if int(rowid) in result:
+		return True
+	else:
+		return False
 
 
 active = True
@@ -86,7 +111,7 @@ while active:
 		price = input('Name the price: ')
 		transaction_date = None
 		while True:
-			input_date = input('Enter the date of trasaction (dd-mm-yyyy): ')
+			input_date = input('Enter the date of trasaction (yyyy-mm-dd): ')
 			try:
 				is_valid_date(input_date)
 			except ValueError:
@@ -100,7 +125,13 @@ while active:
 		expense_id = input("Which item would you like to delete? ")
 		remove_expense(expense_id)
 	elif str(message) == '3':
+		expense_id = input("Which item expense would you like to edit? ")
+		if is_valid_id(expense_id):
+			edit_expense(expense_id)
+		else:
+			print("\nThere is no such item.\n")
+	elif str(message) == '4':
 		seller = input("Enter seller name: ")
 		search_expenses(seller)
-	elif str(message) == '4':
+	elif str(message) == '5':
 		list_expenses()
