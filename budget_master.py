@@ -133,7 +133,11 @@ while active:
 			currency = input('Enter the currency: ')
 		transaction_date = None
 		while True:
-			input_date = input('Enter the date of trasaction (yyyy-mm-dd): ')
+			default_date = input('Default date (today) (y/n): ')
+			if default_date == 'y':
+				input_date = str(datetime.date.today())
+			elif default_date == 'n':
+				input_date = input('Enter the date of trasaction (yyyy-mm-dd): ')
 			try:
 				is_valid_date(input_date)
 			except ValueError:
