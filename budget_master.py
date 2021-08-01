@@ -10,7 +10,7 @@ c = conn.cursor()
 prompt = ("What would you like to do?\n1 - add expense\n"
 		"2 - remove expense\n3 - edit expense\n"
 		"4 - search for expense\n5 - list expenses\n"
-		"6 - sort expenses\n"
+		"6 - sort expenses\n7 - sum expenses\n"
 )
 message = ""
 
@@ -97,6 +97,28 @@ def sort_expenses_by_type():
 	print(mytable)
 
 
+def days_in_month(month):
+	month = int(month)
+	days_30 = [4, 6, 9, 11]
+	days_31 = [1, 3, 5, 7, 8, 10, 12]
+	if month in days_30:
+		return 30
+	elif month in days_31:
+		return 31
+	else:
+		return 28
+
+
+def sum_expenses(month, expense_type):
+	days = days_in_month(month)
+	start_date = f'2021-0{month}-01'
+	finish_date = f'2021-0{month}-{days}'
+	print(start_date, finish_date)
+	c.execute("SELECT SUM(price) FROM expenses WHERE type=? AND transaction_date BETWEEN ? AND ?", (expense_type, start_date, finish_date))
+	mytable = from_db_cursor(c)
+	print(mytable)
+
+
 def is_valid_date(input_date):
 	datetime.datetime.strptime(input_date, '%Y-%m-%d')
 
@@ -170,3 +192,7 @@ while active:
 			sort_expenses_by_seller()
 		elif sort_by == 'type':
 			sort_expenses_by_type()
+	elif str(message) == '7':
+		month = input("Type the number of month (1 - January etc): ")
+		expense_type = input("Type the type of expenses: ")
+		sum_expenses(month, expense_type)
